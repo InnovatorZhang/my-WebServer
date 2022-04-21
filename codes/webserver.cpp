@@ -320,10 +320,8 @@ void WebServer::onWrite_(HttpConn *client) {
             return;
         }
     } else if (ret < 0) {
-        /*建议修改为 ret<0 || client->ToWriteBytes()>0*/
         /*若是缓冲区满了，errno会返回EAGAIN，这时需要重新注册EPOLL上的EPOLLOUT事件*/
         if (writeErrno == EAGAIN) {
-            /*建议修改为 writeErrno == EAGAIN || client->ToWriteBytes()>0，这两种情况下都要注册EPOLLOUT事件，后者是为了防止LT模式下没写完的问题*/
             /*若返回值小于0，且信号为EAGAIN说明数据还没有发送完，重新在EPOLL上注册该连接的EPOLLOUT事件*/
             epoller_->modFd(client->getFd(), connEvent_ | EPOLLOUT);
             return;

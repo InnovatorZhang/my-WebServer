@@ -3,7 +3,7 @@
 //
 #include"httpconn.h"
 
-const char* HttpConn::srcDir;
+const char *HttpConn::srcDir;
 std::atomic<int> HttpConn::userCount;
 bool HttpConn::isET;
 
@@ -147,7 +147,7 @@ ssize_t HttpConn::write(int *saveErrno) {
         /*任需发送的数据大于10240的情况下会继续发送 或 若在LT模式下，只会发送一次，ET模式下会一直发送，直到完毕*/
         /*这里有点问题，如果是LT模式，且需要写的数据小于等于10240，那么连接会被之间关闭，这里可以选择在调用函数处修改判断条件*/
         /*或者直接将这里改为ToWriteBytes()>0*/
-    } while (isET || toWriteBytes() > 10240);
+    } while (toWriteBytes() > 0);
 
     return len;
 }
@@ -166,14 +166,19 @@ bool HttpConn::process() {
     if (readBuff_.readableBytes() <= 0) {
         /*小于等于0表示没有数据可读，直接返回false*/
         return false;
-    } else if (request_.parse(readBuff_)) {
+    }
+
+    HttpRequest::HTTP_CODE processStatus = request_.parse(readBuff_);
+    if (processStatus == HttpRequest::GET_REQUEST) {
         /*使用httprequest类对象解析请求内容，若解析完成，进入回复请求阶段，若失败进入下一个分支*/
         LOG_DEBUG("request path %s", request_.path().c_str());
         /*初始化一个httpresponse对象，负责http应答阶段*/
         response_.init(srcDir, request_.path(), request_.isKeepAlive(), 200);
+    } else if (processStatus == HttpRequest::NO_REQUEST) {
+        /*请求没有读取完整，应该继续读取请求,返回false让上一层调用函数*/
+        return false;
     } else {
-        /*若解析失败，则返回400错误*/
-        /*这里实际上是有问题的，因为解析失败可能是因为请求没有读取完整，应该继续读取请求，而不是直接返回400错误*/
+        /*其他情况表示解析失败，则返回400错误*/
         response_.init(srcDir, request_.path(), false, 400);
     }
     /*httpresponse负责拼装返回的头部以及需要发送的文件*/

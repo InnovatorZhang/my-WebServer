@@ -48,7 +48,7 @@ public:
 
     void init();
 
-    bool parse(Buffer &buff);
+    HTTP_CODE parse(Buffer &buff);
 
     std::string path() const;
 

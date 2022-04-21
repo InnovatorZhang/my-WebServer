@@ -355,12 +355,12 @@ void HttpRequest::parsePath_() {
  * 解析收到的http请求内容
  * 作者实现有点问题，需要改进，可以按照tinywebserver的解析方式进行改进
  */
-bool HttpRequest::parse(Buffer &buff) {
+HttpRequest::HTTP_CODE HttpRequest::parse(Buffer &buff) {
     /*在请求头的每一行结尾都有下面这两个字符*/
     const char CRLF[] = "\r\n";
     /*若没有内容可以被读取，直接返回false，这里是有问题的，应该返回一个NO_REQUEST状态，调用函数接受到该状态之后重新修改EPOLL事件注册一个EPOLLIN事件*/
     if (buff.readableBytes() <= 0) {
-        return false;
+        return NO_REQUEST;
     }
 
     /*状态机方式解析http请求头*/
@@ -375,7 +375,7 @@ bool HttpRequest::parse(Buffer &buff) {
                 /*首先解析请求行*/
                 if (!parseRequestLine_(line)) {
                     /*如果失败的话，false*/
-                    return false;
+                    return BAD_REQUEST;;
                 }
                 /*将客户端传来的path变量添加完整,目录加上默认页面，没有后缀的指定文件加上后缀*/
                 parsePath_();
@@ -386,17 +386,23 @@ bool HttpRequest::parse(Buffer &buff) {
                 /*这里逻辑有点问题，因为可能会存在请求未接受完整的情况，所以后面可以改成根据method判断是否跳转到FINISH阶段*/
                 /*因为在ParseHeader_中请求头解析到空行时会将state_置为body，所以这里的判断条件可以改为 if(state_==body && method_==GET){state_=FINISH;}*/
                 /*这样就可以实验GET与POST的对应处理*/
-                if (buff.readableBytes() <= 2) {
-                    /*如果可读数据大小小于等于2，说明到了GET请求头后的空行，直接将state_置为FINISH结束解析*/
+                if (state_ == BODY && method_ == "GET") {
                     state_ = FINISH;
+                    if(lineEnd != buff.beginWrite()){
+                        buff.retrieveUntil(lineEnd + 2);
+                    }
+                    return GET_REQUEST;
                 }
                 break;
             case BODY:
                 /*解析完请求行之后，若是POST请求则会进入解析请求体这一步*/
                 parseBody_(line);
-                break;
+                if(lineEnd != buff.beginWrite()){
+                    buff.retrieveUntil(lineEnd + 2);
+                }
+                return GET_REQUEST;
             default:
-                break;
+                return INTERNAL_ERROR;
         }
         if (lineEnd == buff.beginWrite()) {
             break;
@@ -405,5 +411,5 @@ bool HttpRequest::parse(Buffer &buff) {
     }
     LOG_DEBUG("[%s], [%s], [%s]", method_.c_str(), path_.c_str(), version_.c_str());
     /*最后最好直接返回NO_REQUEST状态，表示如果执行到这一部分，说明请求没有接受完整，需要继续接受请求，若是请求完整的在之前就会return出while*/
-    return true;
+    return NO_REQUEST;
 }
