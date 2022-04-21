@@ -1,0 +1,17 @@
+2022-04-21 14:26:31.229647 [info]:  =============Server init================
+2022-04-21 14:26:31.229659 [info]:  Port: 1316,OpenLinger: false
+2022-04-21 14:26:31.229685 [info]:  Listen Mode: ET, Conn Mode: ET
+2022-04-21 14:26:31.229688 [info]:  Log level: 1
+2022-04-21 14:26:31.229692 [info]:  srcDir: /home/zzh/Desktop/C++ PROJECTS/my-WebServer/resources/
+2022-04-21 14:26:31.229696 [info]:  SqlConnPool num: 12, ThreadPool num: 6
+2022-04-21 14:26:31.229699 [info]:  ================Server start================
+2022-04-21 14:26:37.675718 [info]:  Client[18](10.16.127.38:5840) in, userCount: 1
+2022-04-21 14:26:37.675780 [info]:  Client[18] in!
+2022-04-21 14:26:37.675794 [info]:  Client[19](10.16.127.38:5584) in, userCount: 2
+2022-04-21 14:26:37.675803 [info]:  Client[19] in!
+2022-04-21 14:26:37.749059 [info]:  Client[20](10.16.127.38:6608) in, userCount: 3
+2022-04-21 14:26:37.749100 [info]:  Client[20] in!
+2022-04-21 14:26:37.749707 [info]:  Client[21](10.16.127.38:7120) in, userCount: 4
+2022-04-21 14:26:37.749742 [info]:  Client[21] in!
+2022-04-21 14:26:37.749767 [info]:  Client[22](10.16.127.38:6864) in, userCount: 5
+2022-04-21 14:26:37.749786 [info]:  Client[22] in!
