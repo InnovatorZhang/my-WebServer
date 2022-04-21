@@ -130,7 +130,7 @@ bool HttpRequest::parseRequestLine_(const std::string &line) {
         state_ = HEADER;
         return true;
     }
-    LOG_ERROR("RequestLine error!");
+    LOG_ERROR("RequestLine error! %s",line.c_str());
 
     return false;
 }
@@ -207,50 +207,49 @@ void HttpRequest::parseFromUrlencoded_() {
         return;
     }
 
-    std::string key, value;
-    int num = 0, n = body_.size(), i = 0, j = 0;
+    std::string key, value, temp;
+    int num = 0;
+    int n = body_.size();
+    int i = 0;
 
     for (; i < n; i++) {
         char ch = body_[i];
         switch (ch) {
             case '=':
                 /*等号之前是key*/
-                key = body_.substr(j, i - j);
-                /*将j移动到=号后一位*/
-                j = i + 1;
+                key = temp;
+                temp.clear();
                 break;
             case '+':
                 /* + 号改为 空格 ，因为浏览器会将空格编码为+号*/
-                body_[i] = ' ';
+                temp += ' ';
                 break;
             case '%':
                 /*浏览器会将非字母字母字符，encode成百分号+其ASCII码的十六进制*/
                 /*%后面跟的是十六进制码,将十六进制转化为10进制*/
                 /*作者这里的实现是有一点问题，这里应该是转成ASCII码对应的字符的，而不是转换成对应的十进制字符，况且转化后的十进制也只能局限在0-99范围内*/
                 num = convertHex(body_[i + 1]) * 16 + convertHex(body_[i + 2]);
-                /*将数字转为字符串*/
-                body_[i + 2] = num % 10 + '0';
-                body_[i + 1] = num / 10 + '0';
+                /*根据ascii码转换为字符*/
+                temp += static_cast<char>(num);
                 /*向后移动两个位置*/
                 i += 2;
                 break;
             case '&':
                 /*&号前是val*/
-                value = body_.substr(j, i - j);
-                /*将j移动到&后一位*/
-                j = i + 1;
+                value = temp;
+                temp.clear();
                 /*添加键值对*/
                 post_[key] = value;
                 LOG_DEBUG("%s = %s", key.c_str(), value.c_str());
                 break;
             default:
+                temp += ch;
                 break;
         }
     }
-    assert(j <= i);
     /*获取最后一个键值对*/
-    if (post_.count(key) == 0 && j < i) {
-        value = body_.substr(j, i - j);
+    if (post_.count(key) == 0) {
+        value = temp;
         post_[key] = value;
     }
 }
@@ -369,6 +368,7 @@ HttpRequest::HTTP_CODE HttpRequest::parse(Buffer &buff) {
         const char *lineEnd = std::search(buff.peek(), buff.beginWriteConst(), CRLF, CRLF + 2);
         /*根据查找到的行尾的位置初始化一个行字符串*/
         std::string line(buff.peek(), lineEnd);
+
         /*开始解析*/
         switch (state_) {
             case REQUEST_LINE:
@@ -388,18 +388,14 @@ HttpRequest::HTTP_CODE HttpRequest::parse(Buffer &buff) {
                 /*这样就可以实验GET与POST的对应处理*/
                 if (state_ == BODY && method_ == "GET") {
                     state_ = FINISH;
-                    if(lineEnd != buff.beginWrite()){
-                        buff.retrieveUntil(lineEnd + 2);
-                    }
+                    buff.retrieveAll();
                     return GET_REQUEST;
                 }
                 break;
             case BODY:
                 /*解析完请求行之后，若是POST请求则会进入解析请求体这一步*/
                 parseBody_(line);
-                if(lineEnd != buff.beginWrite()){
-                    buff.retrieveUntil(lineEnd + 2);
-                }
+                buff.retrieveAll();
                 return GET_REQUEST;
             default:
                 return INTERNAL_ERROR;
