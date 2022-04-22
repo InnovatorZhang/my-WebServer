@@ -160,8 +160,13 @@ ssize_t HttpConn::write(int *saveErrno) {
  * 修改方案：request_.parse()修改为返回解析状态，然后本函数根据解析状态返回true or false
  */
 bool HttpConn::process() {
-    /*首先初始化一个httprequest类对象，负责处理请求的事务*/
-    request_.init();
+    /*首先初始化一个httprequest类对象，负责处理请求的事务，这里不需要每一次都进行初始化，需要保存上次连接的状态，用以指示是否为新的http请求
+     *所以只有当上一次的请求为完成状态时，才回去重新初始化request_成员，以重从开始解析一个http请求
+     */
+    if(request_.state_ == HttpRequest::FINISH){
+        request_.init();
+    }
+    
     /*检查读缓存区中是否存在可读数据*/
     if (readBuff_.readableBytes() <= 0) {
         /*小于等于0表示没有数据可读，直接返回false*/
