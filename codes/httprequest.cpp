@@ -371,7 +371,7 @@ HttpRequest::HTTP_CODE HttpRequest::parse(Buffer &buff) {
 
     /*状态机方式解析http请求头*/
     while (buff.readableBytes() && state_ != FINISH) {
-        /*首先通过查找CRLF标志找到一行的结尾，用于在序列 A 中查找序列 B 第一次出现的位置,lineEnd指针会指向\r位置，也就是有效字符串的后一个位置*/
+        /*首先通过查找CRLF标志找到一行的结尾，用于在序列 A 中查找序列 B 第一次出现的位置,lineEnd指针会指向\r位置，也就是有效字符串的后一个位置，当序列A中没有序列B中的字符时，会返回序列A的尾后指针*/
         const char *lineEnd = std::search(buff.peek(), buff.beginWriteConst(), CRLF, CRLF + 2);
         /*根据查找到的行尾的位置初始化一个行字符串*/
         std::string line(buff.peek(), lineEnd);
