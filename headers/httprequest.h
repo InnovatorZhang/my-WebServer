@@ -50,6 +50,8 @@ public:
 
     HTTP_CODE parse(Buffer &buff);
 
+    PARSE_STATE state() const;
+
     std::string path() const;
 
     std::string &path();

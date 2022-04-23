@@ -61,6 +61,13 @@ int HttpRequest::convertHex(char ch) {
 }
 
 /*
+ * 返回解析请求行得到的state_变量
+ */
+HttpRequest::PARSE_STATE HttpRequest::state() const {
+    return state_;
+}
+
+/*
  * 返回解析请求行得到的path_变量
  */
 std::string &HttpRequest::path() {
@@ -130,7 +137,7 @@ bool HttpRequest::parseRequestLine_(const std::string &line) {
         state_ = HEADER;
         return true;
     }
-    LOG_ERROR("RequestLine error! %s",line.c_str());
+    LOG_ERROR("RequestLine error! %s", line.c_str());
 
     return false;
 }
