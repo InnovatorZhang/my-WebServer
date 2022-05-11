@@ -384,6 +384,11 @@ HttpRequest::HTTP_CODE HttpRequest::parse(Buffer &buff) {
         /*根据查找到的行尾的位置初始化一个行字符串*/
         std::string line(buff.peek(), lineEnd);
 
+        /* 若解析状态停留在header且没有CRLF作为结尾，直接退出循环，等待接收剩余数据 */
+        if (lineEnd == buff.beginWrite() && state_ == HEADER) {
+            break;
+        }
+
         /*开始解析*/
         switch (state_) {
             case REQUEST_LINE:
@@ -416,9 +421,6 @@ HttpRequest::HTTP_CODE HttpRequest::parse(Buffer &buff) {
                 return GET_REQUEST;
             default:
                 return INTERNAL_ERROR;
-        }
-        if (lineEnd == buff.beginWrite()) {
-            break;
         }
         buff.retrieveUntil(lineEnd + 2);
     }
