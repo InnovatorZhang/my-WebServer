@@ -164,15 +164,18 @@ void HttpRequest::parseHeader_(const std::string &line) {
 /*
  * 解析请求体
  */
-void HttpRequest::parseBody_(const std::string &line) {
+bool HttpRequest::parseBody_(const std::string &line) {
     /*将line赋值给类变量body_*/
     body_ = line;
     /*调用ParsePost_函数解析POST中带的请求体数据*/
-    parsePost_();
+    if (!parsePost_()) {
+        return false;
+    }
     /*将状态置为FINISH，指示解析完成*/
     state_ = FINISH;
 
     LOG_DEBUG("Body: %s, len: %d", line.c_str(), line.size());
+    return true;
 }
 
 /*
@@ -181,7 +184,11 @@ void HttpRequest::parseBody_(const std::string &line) {
  * 如果请求方式时POST Content-Type为application/x-www-form-urlencoded就可以解析，表示以键值对的数据格式提交
  * 使用post的形式进行登录信息的传输
  */
-void HttpRequest::parsePost_() {
+bool HttpRequest::parsePost_() {
+    if (body_.size() < atol(header_["Content-Length"].c_str())) {
+        /*判断post数据是否接受完整，未接收完则返回false，表示继续请求*/
+        return false;
+    }
     /*以后可以添加其他种类的Content-Type的支持*/
     if (method_ == "POST" && header_["Content-Type"] == "application/x-www-form-urlencoded") {
         /*将请求体中的内容解析到post_变量中*/
@@ -204,6 +211,7 @@ void HttpRequest::parsePost_() {
             }
         }
     }
+    return true;
 }
 
 /*
@@ -401,7 +409,9 @@ HttpRequest::HTTP_CODE HttpRequest::parse(Buffer &buff) {
                 break;
             case BODY:
                 /*解析完请求行之后，若是POST请求则会进入解析请求体这一步*/
-                parseBody_(line);
+                if (!parseBody_(line)) {
+                    return NO_REQUEST;
+                }
                 buff.retrieveAll();
                 return GET_REQUEST;
             default:

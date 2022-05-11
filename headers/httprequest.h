@@ -75,11 +75,11 @@ private:
 
     void parseHeader_(const std::string &line);
 
-    void parseBody_(const std::string &line);
+    bool parseBody_(const std::string &line);
 
     void parsePath_();
 
-    void parsePost_();
+    bool parsePost_();
 
     void parseFromUrlencoded_();
 
